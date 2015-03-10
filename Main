@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <iostream>
+#include <string>
+#include <sys/stat.h>
+#include <pthread.h>
+
+#include "handleRequest.h"
+#include "authentication.h"
+#include "FilesDisplay.h"
+#include "Upload.h"
+
+using namespace std;
+pthread_mutex_t mymutex = PTHREAD_MUTEX_INITIALIZER;
+
+//void authenticate(int sockfd, char* buffer);
+
+//void handle_request(int socketfd);
+void system_details();
+extern void Upload(int,char*);
+//extern void handle_request(int);
+extern void authenticate(int);
+extern void FilesDisplay(int);
+extern void share(int);
+
+
+int main(int argc, char **argv)
+{
+	//pid_t pid;
+	int pnum=1, status;
+	pthread_t threads[100];
+	int i, port = PORT, pid, listenfd, socketfd, hit;
+	socklen_t length;
+	struct sockaddr_in cli_addr; /* static = initialised to zeros */
+	struct sockaddr_in serv_addr; /* static = initialised to zeros */
+
+	//for(i=0;i<32;i++)
+	//	(void)close(i);		/* close open files */
+	(void)setpgrp();		/* break away from process group */
+
+	listenfd = socket(AF_INET, SOCK_STREAM,0);
+
+	int option =1;
+	setsockopt(listenfd, SOL_SOCKET,  SO_REUSEADDR | SO_REUSEPORT, &option, 4);
+
+
+	if(port < 0 || port >60000)
+		printf("Invalid port number (try 1->60000)");
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serv_addr.sin_port = htons(port);
+
+
+
+	if(bind(listenfd, (struct sockaddr *)&serv_addr,sizeof(serv_addr)) <0)
+		{
+		printf("system call bind error\n");
+//		cout<<"system call bind error"<<endl;
+		exit(0);
+		}
+
+	if( listen(listenfd,64) <0){
+		printf("system call listen error");
+		exit(0);
+		}
+	printf("Server is listening");
+	fflush(stdout);
+//	if(pthread_create(&threads[0], NULL, (void * (*)(void *))system_details,NULL) < 0)
+//	printf("Could not call system datils function");
+
+	for(i=1; ;i++) 
+	{
+		length = sizeof(cli_addr);
+		if((socketfd = accept(listenfd, (struct sockaddr *)&cli_addr, &length)) < 0)
+		{
+		printf("system call accept error");
+		exit(0);
+		}
+
+
+
+		//pthread_attr t_attr;
+		//(void) pthread_attr_init(&t_attr);
+		//(void) pthread_attr_setdetachstate(&t_attr, PTHREAD_CREATE_DETACHED);
+		if (pthread_create(&threads[i], NULL, (void * (*)(void *))handle_request, (void *)socketfd) < 0)
+			printf("Error creating thread");
+		printf("Thread created:%ld\n",threads[i]);
+//		handle_request(socketfd);
+		sleep(1);
+	}
+
+}
+
+void system_details()
+{
+	while(1)
+	{
+	sleep(10);
+	cout<<endl;
+	cout<<"============Server Statistics==========="<<endl;
+	//cout<<"Number of successful Requests:"<<good_requests<<endl;
+	fflush(stdout);
+	//cout<<"Number of Un-successful Requests:"<<bad_requests<<endl;
+	fflush(stdout);
+	//cout<<"Total file size dowloaded:"<<total_download<<"Bytes"<<endl;
+	fflush(stdout);
+	}
+}
