@@ -36,8 +36,6 @@ string quotesql( const string s );
 
  void Upload(int sockfd,char* buffer, int len)
  {
-	//printf("%s",buffer);
-	//static char* buffer;
 	int i,ret;
 	int file_fd;
 	static char file_name;//
